@@ -47,9 +47,20 @@
   flex-shrink: 0;
 }
 
-.icon-cyan { background: var(--accent-cyan); color: #000; }
-.icon-yellow { background: var(--accent-yellow); color: #000; }
-.icon-green { background: var(--accent-green); color: #000; }
+.icon-cyan {
+  background: var(--accent-cyan);
+  color: #000;
+}
+
+.icon-yellow {
+  background: var(--accent-yellow);
+  color: #000;
+}
+
+.icon-green {
+  background: var(--accent-green);
+  color: #000;
+}
 
 .contact-detail-row h4 {
   font-size: 0.75rem;
@@ -104,13 +115,40 @@
 .form-group textarea:focus {
   outline: none;
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 10px rgba(0,240,255,0.2);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+@media (max-width: 992px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contact-svg-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%);
+  /* បំប្លែង SVG ឱ្យទៅជាពណ៌ខ្មៅសុទ្ធ */
+}
+
+.social-svg-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  filter: brightness(0) saturate(100%);
 }
 
 @media (max-width: 992px) {

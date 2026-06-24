@@ -1,90 +1,129 @@
-import React, { useEffect, useRef } from 'react';
-import './About.css';
-import { Code2, Palette, GraduationCap, BookOpen, Wrench } from 'lucide-react';
-
-const useReveal = (delay = 0) => {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.unobserve(el); } },
-      { threshold: 0.1 }
-    );
-    el.style.transitionDelay = `${delay}s`;
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-};
+import React, { useState, useEffect } from 'react';
+import { Code2, Palette, Wrench, GraduationCap, BookOpen } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 const About = () => {
-  const skillGroups = [
-    {
-      label: 'Frontend / Backend', icon: <Code2 size={22} />, color: 'cyan', skills: [
-        { name: 'Vue.js', icon: 'icons8-vue-js' }, { name: 'Laravel', icon: 'laravel-svgrepo-com' }, { name: 'Python', icon: 'python-svgrepo-com' }
-      ]
-    },
-    {
-      label: 'Design Tools', icon: <Palette size={22} />, color: 'yellow', skills: [
-        { name: 'Photoshop', icon: 'Adobe_Photoshop_CC_2026_icon' }, { name: 'Illustrator', icon: 'Adobe_Illustrator_CC_icon' }, { name: 'CorelDRAW', icon: 'corel-draw-svgrepo-com' }
-      ]
-    },
-    {
-      label: 'Office Tools', icon: <Wrench size={22} />, color: 'green', skills: [
-        { name: 'Word', icon: 'Microsoft_Office_Word_(2025–present)' }, { name: 'Excel', icon: 'Microsoft_Office_Excel_(2025–present)' }
-      ]
-    },
-  ];
+  const [skillGroups, setSkillGroups] = useState([]);
+  const [education, setEducation] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('skills');
 
-  const education = [
-    { year: '2022–Now', school: 'National Meanchey University', degree: "Bachelor's – Information Technology", icon: <GraduationCap size={20} /> },
-    { year: '2022', school: 'Mongkol Borey High School', degree: 'High School Diploma', icon: <BookOpen size={20} /> },
-    { year: '2019', school: 'KoyMaeng Secondary School', degree: 'Secondary School Diploma', icon: <BookOpen size={20} /> },
-  ];
+  useEffect(() => {
+    supabase.from('skills').select('*').order('created_at', { ascending: true }).then(({ data }) => {
+      const grouped = {};
+      (data || []).forEach(s => {
+        if (!grouped[s.category]) grouped[s.category] = [];
+        grouped[s.category].push(s);
+      });
+      setSkillGroups(Object.entries(grouped).map(([cat, items]) => ({
+        label: cat,
+        icon: cat.includes('Design') ? <Palette size={16}/> : cat.includes('Office') ? <Wrench size={16}/> : <Code2 size={16}/>,
+        accent: cat.includes('Design') ? '#f59e0b' : cat.includes('Office') ? '#10b981' : '#7c3aed',
+        items,
+      })));
+      setLoading(false);
+    });
+    supabase.from('education').select('*').order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setEducation(data);
+    });
+  }, []);
 
-  const leftRef = useReveal(0);
-  const rightRef = useReveal(0.2);
+
+  const tabs = [
+    { id: 'skills', label: '⚔️ ជំនាញ' },
+    { id: 'education', label: '🎓 ការអប់រំ' },
+  ];
 
   return (
-    <section id="about" className="about-section section-container">
-      <h2 className="section-title">⚔️ CHARACTER STATS</h2>
-      <div className="about-layout">
-        <div className="skills-column fade-in-left" ref={leftRef}>
-          {skillGroups.map((group, i) => (
-            <div key={i} className={`skill-group panel-game border-${group.color}`} style={{ transitionDelay: `${i * 0.1}s` }}>
-              <div className="skill-group-header">
-                <span className={`skill-icon-wrap icon-${group.color}`}>{group.icon}</span>
-                <h3>{group.label}</h3>
-              </div>
-              <div className="skill-tags">
-                {group.skills.map((s, j) => (
-                  <span key={j} className={`skill-pill pill-${group.color}`}>
-                    <img src={`/icons/${s.icon}.svg`} alt={s.name} className="pill-icon" />
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            </div>
+    <section id="about" className="py-20 px-6">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Section header */}
+        <div className="text-center mb-12">
+          <p className="section-label mb-3">CHARACTER STATS</p>
+          <h2 className="text-4xl md:text-5xl font-black gradient-text" style={{ fontFamily: 'Outfit,sans-serif' }}>
+            ស្ថិតិតួអង្គ
+          </h2>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 justify-center">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`btn-modern ${activeTab === t.id ? 'btn-holo btn-float' : 'btn-ghost'} text-base px-8 py-3.5`}>
+              {t.label}
+            </button>
           ))}
         </div>
 
-        <div className="edu-column fade-in-right" ref={rightRef}>
-          <h3 className="edu-title">🎓 EDUCATION LOG</h3>
-          <div className="edu-timeline">
-            {education.map((e, i) => (
-              <div key={i} className="edu-card panel-game">
-                <div className="edu-icon-wrap">{e.icon}</div>
-                <div className="edu-info">
-                  <span className="badge-game edu-year"><span>{e.year}</span></span>
-                  <h4>{e.school}</h4>
-                  <p>{e.degree}</p>
+        {/* SKILLS */}
+        {activeTab === 'skills' && (
+          <div className="space-y-5">
+            {loading ? (
+              <div className="glass-elevated p-8 text-center">
+                <p className="gradient-text text-xl font-black">កំពុងផ្ទុក...</p>
+              </div>
+            ) : skillGroups.length === 0 ? (
+              <div className="glass-elevated p-12 text-center">
+                <p style={{ color: '#6b7db3' }} className="font-semibold">មិនទាន់មានជំនាញ — ចូល Admin ដើម្បីបន្ថែម</p>
+              </div>
+            ) : skillGroups.map((group, gi) => (
+              <div key={gi} className="glass-elevated overflow-hidden">
+                {/* Group header */}
+                <div className="flex items-center gap-3 px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: `${group.accent}20`, border: `1px solid ${group.accent}40`, color: group.accent }}>
+                    {group.icon}
+                  </div>
+                  <h3 className="font-bold text-base" style={{ color: group.accent }}>{group.label}</h3>
+                  <span className="pill ml-auto" style={{ background: `${group.accent}15`, color: group.accent, border: `1px solid ${group.accent}30` }}>
+                    {group.items.length} ជំនាញ
+                  </span>
                 </div>
-                {i < education.length - 1 && <div className="edu-line"></div>}
+                {/* Skills grid */}
+                <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {group.items.map((s, si) => (
+                    <div key={si} className="glass flex items-center gap-3 p-3 rounded-2xl hover:scale-[1.02] transition-transform cursor-default">
+                      <div className="rank-badge text-xs">{si + 1}</div>
+                      {s.icon && (
+                        <img src={s.icon.startsWith('http') ? s.icon : `/icons/${s.icon}.svg`} alt={s.label} className="w-6 h-6 object-contain rounded"
+                          onError={e => { e.target.style.display='none'; }} />
+                      )}
+                      <span className="text-sm font-bold truncate" style={{ color: '#f0f4ff' }}>{s.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
+
+        {/* EDUCATION */}
+        {activeTab === 'education' && (
+          <div className="space-y-4">
+            {education.map((e, i) => (
+              <div key={i} className="glass-elevated flex items-center gap-6 p-6 group hover:scale-[1.01] transition-transform">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: `${e.accent || '#7c3aed'}15`, border: `1px solid ${e.accent || '#7c3aed'}30`, color: e.accent || '#7c3aed' }}>
+                  {e.icon_type === 'degree' ? <GraduationCap size={18}/> : <BookOpen size={18}/>}
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="pill" style={{ background: `${e.accent || '#7c3aed'}15`, color: e.accent || '#7c3aed', border: `1px solid ${e.accent || '#7c3aed'}30` }}>
+                      {e.year}
+                    </span>
+                  </div>
+                  <h4 className="font-black text-lg" style={{ color: '#f0f4ff', fontFamily: 'Outfit,sans-serif' }}>{e.school}</h4>
+                  <p className="text-sm font-semibold" style={{ color: '#6b7db3' }}>{e.degree}</p>
+                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: `${e.accent || '#7c3aed'}15`, color: e.accent || '#7c3aed', fontSize: '1.2rem' }}>
+                  {e.icon_type === 'degree' ? '🎓' : '📘'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,95 +1,105 @@
-import React, { useEffect, useRef } from 'react';
-import './Contact.css';
-
-const useReveal = (delay = 0) => {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.unobserve(el); } },
-      { threshold: 0.1 }
-    );
-    el.style.transitionDelay = `${delay}s`;
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-};
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const Contact = () => {
-  const infoRef = useReveal(0);
-  const formRef = useReveal(0.2);
+  const [socialLinks, setSocialLinks] = useState([]);
+  const [profile, setProfile] = useState(null);
 
-  const contactDetails = [
-    { icon: '4202011emailgmaillogomailsocialsocialmedia-115677_115624', color: 'cyan', label: 'EMAIL', value: 'vongheng2019@gmail.com' },
-    { icon: 'phone-call-svgrepo-com', color: 'yellow', label: 'PHONE', value: '069717070' },
-    { icon: 'Location_pin_icon', color: 'green', label: 'LOCATION', value: 'Banteay Meanchey, Cambodia' },
+  useEffect(() => {
+    supabase.from('social_links').select('*').order('created_at', { ascending: true })
+      .then(({ data }) => { if (data) setSocialLinks(data); });
+    
+    supabase.from('profile').select('*').eq('id', 1).single()
+      .then(({ data }) => { if (data) setProfile(data); });
+  }, []);
+  const contactItems = [
+    { icon: '📧', label: 'អ៊ីមែល', value: profile?.email || 'vongheng2019@gmail.com', accent: '#7c3aed' },
+    { icon: '📞', label: 'ទូរស័ព្ទ', value: profile?.phone || '069717070', accent: '#06b6d4' },
+    { icon: '📍', label: 'ទីតាំង', value: profile?.location || 'Banteay Meanchey, KH', accent: '#10b981' },
   ];
 
-
   return (
-    <section id="contact" className="contact-section section-container">
-      <h2 className="section-title">📡 SEND A SIGNAL</h2>
-      <p className="section-subtitle">Open for missions, collaborations &amp; adventures!</p>
+    <section id="contact" className="py-20 px-6 relative">
+      <div className="aurora-blob w-80 h-80 pointer-events-none"
+        style={{ bottom: '5%', left: '-5%', background: 'rgba(236,72,153,0.15)' }} />
 
-      <div className="contact-layout">
-        <div className="contact-info panel-game fade-in-left" ref={infoRef}>
-          <div className="contact-info-header">
-            <h3>PLAYER CONTACT</h3>
-            <div className="contact-online">
-              <span className="status-dot"></span> AVAILABLE
+      <div className="max-w-5xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="section-label mb-3">CONTACT</p>
+          <h2 className="text-4xl md:text-5xl font-black gradient-text" style={{ fontFamily: 'Outfit,sans-serif' }}>
+            ផ្ញើសញ្ញា
+          </h2>
+          <p className="mt-3 font-medium" style={{ color: '#6b7db3' }}>
+            បច្ចុប្បន្នកំពុងស្វែងរកឱកាសថ្មីៗ និង កិច្ចសហការ 🤝
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Left: Info */}
+          <div className="space-y-4">
+            {/* Status card */}
+            <div className="glass-elevated flex items-center gap-4 p-5">
+              <div className="glow-dot w-3 h-3 shrink-0"></div>
+              <div>
+                <p className="section-label">ស្ថានភាព</p>
+                <p className="font-black text-lg" style={{ color: '#6ee7b7', fontFamily: 'Outfit,sans-serif' }}>
+                  {profile?.status_text || 'អនឡាញ & ត្រៀមខ្លួន'}
+                </p>
+              </div>
             </div>
-          </div>
-          <p className="contact-info-sub">Currently open to new opportunities, freelance, and collaborations.</p>
 
-          <div className="contact-details">
-            {contactDetails.map((d, i) => (
-              <div key={i} className="contact-detail-row">
-                <div className={`contact-icon-wrap icon-${d.color}`}>
-                  <img src={`/icons/${d.icon}.svg`} alt={d.label} className="contact-svg-icon" />
+            {contactItems.map((item, i) => (
+              <div key={i} className="glass-elevated flex items-center gap-4 p-5 hover:scale-[1.01] transition-transform">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                  style={{ background: `${item.accent}10`, border: `1px solid ${item.accent}25` }}>
+                  {item.icon}
                 </div>
                 <div>
-                  <h4>{d.label}</h4>
-                  <p>{d.value}</p>
+                  <p className="section-label">{item.label}</p>
+                  <p className="font-bold" style={{ color: '#f0f4ff' }}>{item.value}</p>
                 </div>
               </div>
             ))}
+
+            {/* Social */}
+            <div className="flex flex-wrap gap-3">
+              {socialLinks.map((s, i) => (
+                <a key={i} href={s.link_url} target="_blank" rel="noreferrer"
+                  className="btn-modern btn-ghost flex-1 py-3 px-4 text-sm flex items-center justify-center gap-2 min-w-[100px]"
+                  title={s.platform_name}>
+                  {s.icon_url && s.icon_url.startsWith('http') ? (
+                    <img src={s.icon_url} alt={s.platform_name} className="w-5 h-5 object-contain" onError={(e) => { e.target.style.display='none'; }} />
+                  ) : (
+                    <span className="text-lg">{s.icon_url || '🔗'}</span>
+                  )}
+                  <span className="font-semibold">{s.platform_name}</span>
+                </a>
+              ))}
+            </div>
           </div>
 
-          <div className="contact-socials">
-            <a href="https://github.com/puyvongheng" target="_blank" rel="noreferrer" className="btn-game btn-icon-game btn-cyan" title="GitHub">
-              <img src="/icons/github.svg" alt="GitHub" className="social-svg-icon" />
-            </a>
-            <a href="https://t.me/puyvongheng2025" target="_blank" rel="noreferrer" className="btn-game btn-icon-game btn-cyan" title="Telegram">
-              <img src="/icons/telegram.svg" alt="Telegram" className="social-svg-icon" />
-            </a>
-            <a href="https://facebook.com/puyongheng" target="_blank" rel="noreferrer" className="btn-game btn-icon-game btn-yellow" title="Facebook">
-              <img src="/icons/facebook.svg" alt="Facebook" className="social-svg-icon" />
-            </a>
+          {/* Right: Form */}
+          <div className="glass-elevated p-6 space-y-4">
+            <h3 className="font-black text-xl" style={{ color: '#f0f4ff', fontFamily: 'Outfit,sans-serif' }}>ផ្ញើសារ ✉️</h3>
+
+            <div>
+              <label className="section-label block mb-2">ឈ្មោះ</label>
+              <input type="text" className="input-modern" placeholder="Enter your name" />
+            </div>
+            <div>
+              <label className="section-label block mb-2">អ៊ីមែល</label>
+              <input type="email" className="input-modern" placeholder="your@email.com" />
+            </div>
+            <div>
+              <label className="section-label block mb-2">សារ</label>
+              <textarea rows="4" className="input-modern resize-none" placeholder="Your message..."></textarea>
+            </div>
+            <button type="button" className="btn-modern btn-violet w-full py-3.5 text-base">
+              📤 ផ្ញើ
+            </button>
           </div>
         </div>
-
-        <form className="contact-form panel-game fade-in-right" ref={formRef}>
-          <h3 className="contact-form-title">SEND MESSAGE</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="name">YOUR NAME</label>
-              <input type="text" id="name" placeholder="Player Name..." />
-            </div>
-            <div className="form-group">
-              <label htmlFor="email">YOUR EMAIL</label>
-              <input type="email" id="email" placeholder="player@game.com" />
-            </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="message">MESSAGE</label>
-            <textarea id="message" rows="5" placeholder="Type your message here..."></textarea>
-          </div>
-          <button type="submit" className="btn-game btn-yellow contact-submit">
-            <img src="/icons/send.svg" alt="Send" className="btn-icon" /> SEND SIGNAL
-          </button>
-        </form>
       </div>
     </section>
   );
